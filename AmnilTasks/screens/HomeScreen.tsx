@@ -1,32 +1,88 @@
-// HomeScreen.tsx
-
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 
 type HomeScreenProps = {
   navigation: any;
 };
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const [posts, setPosts] = useState<{ id: number; title: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("https://jsonplaceholder.typicode.com/posts")
+      .then((response) => response.json())
+      .then((data) => {
+        const trimmedData = data.map((post: { id: number; title: string }) => ({
+          id: post.id,
+          title: post.title,
+        }));
+        setPosts(trimmedData);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error(error);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Home Screen</Text>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("Details")}
-      >
-        <Text>Go to Details</Text>
-      </TouchableOpacity>
+    <View style={styles.container}>
+      <FlatList
+        data={posts}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.itemContainer}
+            onPress={() => navigation.navigate("Details", { postId: item.id })}
+          >
+            <Text style={styles.title}>{item.title}</Text>
+          </TouchableOpacity>
+        )}
+        scrollEventThrottle={16}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  button: {
-    marginTop: 20,
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     padding: 10,
-    backgroundColor: "blue",
-    borderRadius: 5,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  itemContainer: {
+    backgroundColor: "#f8f8f8",
+    padding: 20,
+    marginVertical: 8,
+    borderRadius: 10,
+    width: "100%",
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
+
 export default HomeScreen;
